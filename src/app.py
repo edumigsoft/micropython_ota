@@ -15,7 +15,6 @@ class APP(object):
         self.main()
 
     def main(self):
-        pass
         while True:
             self.pinSTATE.value(not self.pinSTATE.value())
-            sleep_ms(1000)
+            sleep_ms(500)

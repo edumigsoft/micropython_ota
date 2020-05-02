@@ -1,0 +1,10 @@
+Gravar firmware:
+● esptool.py --port /dev/ttyUSB0 erase_flash
+● esptool.py --port /dev/ttyUSB0 --after hard_reset --baud 460800 write_flash --flash_size=detect 0 esp8266-20191220-v1.12.bin
+
+Referências de comandos:
+● picocom /dev/ttyUSB0 -b115200 (acessa o módulo)
+● ampy --port /dev/ttyUSB0 ls (lista os arquivos no módulo)
+● ampy --port /dev/ttyUSB0 get boot.py (lê o arquivo expecificado)
+● ampy --port /dev/ttyUSB0 put boot.py (grava o arquivo no módulo)
+● ampy --port /dev/ttyUSB0 rm boot.py (remove o arquivo do módulo)

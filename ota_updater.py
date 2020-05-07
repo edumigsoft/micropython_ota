@@ -3,9 +3,8 @@
 
 import gc
 import os
-
 import machine
-import usocket
+import socket
 
 
 class OTAUpdater:
@@ -113,6 +112,8 @@ class OTAUpdater:
 
     def get_latest_version(self):
         latest_release = self.http_client.get(self.github_repo + '/releases/latest')
+        print('latest_release: ')
+        print(latest_release)
         version = latest_release.json()['tag_name']
         latest_release.close()
         return version
@@ -189,7 +190,8 @@ class HttpClient:
         if proto == 'http:':
             port = 80
         elif proto == 'https:':
-            import ussl
+            # import ussl
+            import ssl
             port = 443
         else:
             raise ValueError('Unsupported protocol: ' + proto)
@@ -198,15 +200,21 @@ class HttpClient:
             host, port = host.split(':', 1)
             port = int(port)
 
-        ai = usocket.getaddrinfo(host, port, 0, usocket.SOCK_STREAM)
-        ai = ai[0]
+        try:
+            ai = socket.getaddrinfo(host, port)  # , 0, socket.SOCK_STREAM)
+            ai = ai[0]
+        except OSError as e:
+            print(e)
+            return None
 
-        s = usocket.socket(ai[0], ai[1], ai[2])
+        s = socket.socket()  # ai[0], ai[1], ai[2])
         try:
             s.connect(ai[-1])
             if proto == 'https:':
-                s = ussl.wrap_socket(s, server_hostname=host)
-            s.write(b'%s /%s HTTP/1.0\r\n' % (method, path))
+                print('https: ', host)
+                # s = ussl.wrap_socket(s) # , server_hostname=host)
+                # s = ssl.wrap_socket(s)  # , server_hostname=host)
+            s.write(b'%s /%s HTTP/1.1\r\n' % (method, path))
             if not 'Host' in headers:
                 s.write(b'Host: %s\r\n' % host)
             # Iterate over keys to avoid tuple alloc
@@ -232,17 +240,20 @@ class HttpClient:
                 s.write(data)
 
             l = s.readline()
-            # print(l)
             l = l.split(None, 2)
-            status = int(l[1])
+            status = 0
+            if len(l) > 0:
+                status = int(l[1])
             reason = ''
             if len(l) > 2:
                 reason = l[2].rstrip()
+            print('s: ', s)
+            print('l: ', l)
             while True:
                 l = s.readline()
                 if not l or l == b'\r\n':
                     break
-                # print(l)
+                print('l: ', l)
                 if l.startswith(b'Transfer-Encoding:'):
                     if b'chunked' in l:
                         raise ValueError('Unsupported ' + l)
@@ -252,6 +263,8 @@ class HttpClient:
             s.close()
             raise
 
+        print('s: ')
+        print(s)
         resp = Response(s)
         resp.status_code = status
         resp.reason = reason
